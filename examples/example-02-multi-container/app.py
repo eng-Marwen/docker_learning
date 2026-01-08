@@ -52,4 +52,6 @@ def health():
         }), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # NOTE: debug=False is used for security
+    # In development, you can use debug=True, but NEVER in production
+    app.run(host='0.0.0.0', port=5000, debug=False)
