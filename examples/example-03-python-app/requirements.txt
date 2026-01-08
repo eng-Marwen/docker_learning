@@ -1,0 +1,2 @@
+# No external dependencies - using Python standard library
+# This file is included to demonstrate proper dependency management
