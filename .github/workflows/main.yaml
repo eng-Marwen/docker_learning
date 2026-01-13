@@ -53,8 +53,9 @@ jobs:
         with:
           context: . #build command
           push: true
+          #specify the repo name
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/express-app:${{ env.IMAGE_TAG }}
+            ${{ secrets.DOCKER_USERNAME }}/my-app:${{ env.IMAGE_TAG }} 
 
 # Push to main
 #    ↓
