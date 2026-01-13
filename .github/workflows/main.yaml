@@ -1,0 +1,70 @@
+name: my first automated workflow TEST  & PUSH image to docker file
+#event listners to triggers jobs
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+#actions
+jobs:
+  #job name
+  ci-cd:
+    #GitHub gives you a temporary VM comes with the most used tools :docker ,node git ... the vm is destroyd after the job end
+    runs-on: ubuntu-latest
+    #steps run sequentially one step fail --> job stop
+    steps:
+      #Clones your GitHub repository into the VM its like git clone your-repo
+      - name: checkout repo
+        uses: actions/checkout@v4 #existen
+      #Installs Node.js v18 in the VM
+      - name: setup node js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      #Installs packages from package.json
+      - name: install dependencies
+        uses: npm install
+      #Run Jest tests
+      - name: run tests
+        uses: npm test
+      #prepare docker for building images
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      #Authenticates GitHub VM with Docker Hub
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+            username: ${{ secrets.engmarwen }}
+            password: ${{ secrets.boussabat12345 }}
+      #for image tag
+      - name: Get version and commit
+        id: meta
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          SHA=$(echo $GITHUB_SHA | cut -c1-7)
+          echo "IMAGE_TAG=v${VERSION}-${SHA}" >> $GITHUB_ENV
+      #Build & push Docker image
+      - name: build and push the image to docker hub
+        uses: docker/build-push-action@v5
+        with: 
+          context: . #build command
+          push: true
+          tags: |
+              ${{ secrets.engmarwen }}/express-app:${{ env.IMAGE_TAG }}
+            
+
+# Push to main
+#    ↓
+# Checkout code
+#    ↓
+# Install dependencies
+#    ↓
+# Run Jest tests
+#    ↓
+# Tests pass?
+#    ├── NO → Stop 
+#    └── YES
+#          ↓
+#      Build Docker image
+#          ↓
+#      Push image to Docker Hub
