@@ -1,0 +1,129 @@
+# =============================================================================
+# KUBERNETES DEPLOYMENT CONFIGURATION FOR MONGODB
+# =============================================================================
+# This YAML file defines a Deployment and Service for running MongoDB in Kubernetes
+
+# -----------------------------------------------------------------------------
+# DEPLOYMENT RESOURCE
+# -----------------------------------------------------------------------------
+# Deployment: A Kubernetes object that manages a replicated application
+# It ensures the specified number of pod replicas are running at all times
+# If a pod fails, the Deployment controller will automatically create a new one
+
+apiVersion: apps/v1 # API version for Deployment objects (apps/v1 is stable)
+kind: Deployment # Resource type - defines a deployment
+metadata:
+  # Metadata: Data that helps uniquely identify the object
+  name: mongodb-depl # Name of this deployment (must be unique in namespace)
+  labels:
+    # Labels: Key-value pairs used to organize and select Kubernetes objects
+    app: mongodb # Label to identify this deployment as part of mongodb app
+
+spec:
+  # Spec: Desired state specification for the deployment
+  replicas: 1 # Number of pod replicas to run (1 = single instance, no high availability)
+
+  selector:
+    # Selector: Defines how the Deployment finds which Pods to manage
+    matchLabels:
+      app: mongodb # This deployment manages pods with label "app: mongodb"
+
+  template:
+    # Template: Blueprint for creating pods (pod specification)
+    # Each replica will be created based on this template
+
+    metadata:
+      # Pod metadata
+      labels:
+        app:
+          mongodb # Label applied to each pod created from this template
+          # Must match the selector above so deployment can manage these pods
+
+    spec:
+      # Pod specification: Defines the containers and settings for each pod
+      containers:
+        # Containers: List of containers to run in each pod
+        - name: mongodb # Name of the container (unique within the pod)
+          image:
+            mongo # Docker image to use (pulls from Docker Hub by default)
+            # "mongo" is the official MongoDB image
+
+          ports:
+            # Ports: Network ports that the container exposes
+            - containerPort:
+                27017 # MongoDB's default port
+                # This is the port MongoDB listens on inside the container
+
+          env:
+            # Environment Variables: Configuration passed to the container
+            # MongoDB uses these specific env vars to set up the root admin user
+
+            - name: MONGO_INITDB_ROOT_USERNAME # Environment variable name inside container
+              valueFrom:
+                # ValueFrom: Gets the value from an external source (Secret, ConfigMap, etc.)
+                secretKeyRef:
+                  # SecretKeyRef: References a value stored in a Kubernetes Secret
+                  # Secrets store sensitive data like passwords in an encrypted format
+                  name: mongodb-secret # Name of the Secret resource to reference
+                  key: mongo-root-username # Key within that Secret to get the value from
+
+            - name: MONGO_INITDB_ROOT_PASSWORD # Environment variable for root password
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret # Same Secret resource
+                  key: mongo-root-password # Different key for password value
+
+
+# -----------------------------------------------------------------------------
+# Document separator: Allows multiple Kubernetes resources in one YAML file
+---
+# -----------------------------------------------------------------------------
+# SERVICE RESOURCE
+# -----------------------------------------------------------------------------
+# Service: An abstraction that defines a logical set of Pods and a policy to access them
+# It provides a stable IP address and DNS name for accessing pods
+# Even if pods are recreated with new IPs, the Service IP remains constant
+
+apiVersion: v1 # API version for Service objects (v1 is the core API)
+kind: Service # Resource type - defines a service
+metadata:
+  name: mongodb-service # Name of this service (used for DNS: mongodb-service.namespace.svc.cluster.local)
+
+spec:
+  # Service specification
+  selector:
+    # Selector: Determines which pods this service will route traffic to
+    app:
+      mongodb # Routes traffic to any pod with label "app: mongodb"
+      # This matches the pods created by our Deployment above
+
+  ports:
+    # Ports: Defines port mapping for the service
+    - protocol: TCP # Network protocol (TCP or UDP)
+      port:
+        3000 # Port exposed by the Service (what clients connect to)
+        # Other pods/services access MongoDB via: mongodb-service:3000
+      targetPort:
+        27017 # Port on the pod/container where traffic is forwarded
+        # This must match the containerPort in the Deployment (27017)
+        # The Service acts as a proxy: traffic to port 3000 → forwarded to 27017
+
+# -----------------------------------------------------------------------------
+# DEPLOYMENT NOTES
+# -----------------------------------------------------------------------------
+# Deployment Order (Important!):
+# 1. First, create and apply the Secret resource (mongodb-secret)
+#    Command: kubectl apply -f secret.yaml
+# 2. Then, apply this configuration file
+#    Command: kubectl apply -f myfirst-k8s-config-file.yaml
+#
+# Why this order matters:
+# - The Deployment references the Secret for environment variables
+# - If the Secret doesn't exist, the pods will fail to start
+# - Kubernetes will show an error about missing Secret references
+#
+# Verification Commands:
+# - kubectl get deployments    # Check deployment status
+# - kubectl get pods          # Check if pods are running
+# - kubectl get services      # Check service configuration
+# - kubectl logs <pod-name>   # View MongoDB container logs
