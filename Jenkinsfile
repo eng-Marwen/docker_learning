@@ -1,11 +1,11 @@
 pipeline{
   agent any
-  satge("buid"){
+  stage("buid"){
     step{
       echo 'hello world'
     }
   }
-    satge("test"){
+    stage("test"){
     step{
       echo 'hello test'
     }
