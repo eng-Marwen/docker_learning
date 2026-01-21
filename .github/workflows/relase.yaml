@@ -78,8 +78,12 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag ${{ env.IMAGE_TAG }}
-          git push origin ${{ env.IMAGE_TAG }}
+          if git rev-parse "${{ env.IMAGE_TAG }}" >/dev/null 2>&1; then
+            echo "Tag ${{ env.IMAGE_TAG }} already exists. Skipping tag creation."
+          else
+            git tag ${{ env.IMAGE_TAG }}
+            git push origin ${{ env.IMAGE_TAG }}
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
