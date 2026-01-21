@@ -7,14 +7,20 @@ on:
   pull_request:
     branches: [main]
 
+# Grant permissions to the workflow
+permissions:
+  contents: write
+
 jobs:
   ci-cd:
     runs-on: ubuntu-latest
     steps:
-
       # 1️⃣ Checkout repo
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
       # 2️⃣ Setup Node.js
       - name: Setup Node.js
@@ -82,10 +88,12 @@ jobs:
       # 9️⃣ Tag Git commit
       - name: Tag Git commit
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag ${{ env.IMAGE_TAG }}
           git push origin ${{ env.IMAGE_TAG }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # 🔟 Create GitHub Release
       - name: Create GitHub Release
