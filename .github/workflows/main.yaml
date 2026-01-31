@@ -32,12 +32,23 @@ jobs:
           cd app
           npm test
 
+
+
+
     # 5. Run SonarCloud analysis
+      - name: check sonar envar
+        run: |
+          echo ${{ secrets.SONAR_TOKEN }}
+          
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v2
         with:
           args: >
             -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+
+
+
+
 
       #prepare docker for building images
       - name: Set up Docker Buildx
