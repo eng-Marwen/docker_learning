@@ -33,7 +33,6 @@ describe("Server API Tests", () => {
           upsert: true,
           new: true,
         });
-
         res.send(userObj);
       } catch (err) {
         res.status(500).send({ error: "Database operation failed" });
